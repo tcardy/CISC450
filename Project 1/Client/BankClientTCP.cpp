@@ -2,7 +2,6 @@
 /* Programmed by Adarsh Sethi */
 /* February 19, 2017 */
 
-#include "stdafx.h"
 #include <iostream>
 #include <sstream>
 #include <string>
