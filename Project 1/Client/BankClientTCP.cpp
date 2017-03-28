@@ -75,7 +75,6 @@ int main(void) {
 	char modifiedSentence[STRING_SIZE]; /* receive message */
 	unsigned int msg_len;  /* length of message */
 	int bytes_sent, bytes_recd; /* number of bytes sent or received */
-	int Transfer_Destination;
 
 	//My New Variables
 	int Switch_Menu; //The Menu Iterator
