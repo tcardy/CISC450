@@ -28,7 +28,6 @@ void Balance_Request(char sentence[], int Account, int Transaction_Type){
 	sentence[1] = Int_to_Char_conversion(Transaction_Type);
 	sentence[2] = Int_to_Char_conversion(Account);
 	sentence[3] = Int_to_Char_conversion(Account);
-	sentence[4] = '\o';
 
 	//Just need to send Sentence at this point
 }
