@@ -62,6 +62,41 @@ void Money_Transactions(char sentence[], int Account, int Transaction_Type, int 
 	//Message is ready to send
 	//send message here
 }
+//This will read messages sent back to the client
+void Message_Reader(char sentence[], int Account_Type, int Switch_Menu){
+	//This checks if the error index is not 0. if so, something happened
+	if (sentence[0] != '0'){
+		cout << "At some point an error occured, Transaction unsecured" << endl;
+		return;
+	}
+	/*This extracts 20 characters from our string that represents out array
+	Then the extracted characters are loaded into a bit set, representing the amount
+	requested for an action */
+	string sentence_amount_string(sentence + 4, sentence + 24);
+	bitset<20> b2(sentence_amount_string);
+	//Another switch menu to navigate the output based on the transaction
+	switch (Switch_Menu){
+	case 0:
+		cout << "Check Balance completed" << endl << "$";
+		cout << b2.to_ulong();
+		cout << " Available" << endl;
+		break;
+	case 1:
+		cout << "Deposit completed" << endl << "$";
+		cout << b2.to_ulong();
+		cout << " Deposited" << endl;
+		break;
+	case 2:
+		cout << "Withdrawl completed" << endl << "$";
+		cout << b2.to_ulong();
+		cout << " Withdrew" << endl;
+		break;
+	case 3:
+		cout << "Transfer completed" << endl << "$";
+		cout << b2.to_ulong();
+		cout << "Transferred";
+	}
+}
 int main(void) {
 
 	int sock_client;  /* Socket used by client */
@@ -72,6 +107,7 @@ int main(void) {
 	char sentence[STRING_SIZE];  /* send message */
 	char modifiedSentence[STRING_SIZE]; /* receive message */
 	unsigned int msg_len;  /* length of message */
+	unsigned int mod_msg_len; /* length of modified message*/
 	int bytes_sent, bytes_recd; /* number of bytes sent or received */
 
 	//My New Variables
@@ -137,7 +173,14 @@ int main(void) {
 			cin >> Account_Type;
 			Transfer_Destination = Account_Type;
 			Balance_Request(sentence, Account_Type, Switch_Menu); //Function that fills sentence to be sent
+			msg_len = strlen(sentence) + 1;
+			cout << "size of message" << sizeof(sentence) << endl;
+			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
+			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
+			cout << "size of recieved message" << sizeof(sentence) << endl;
+			cout << "Length of recieved message" << msg_len << endl;
+			Message_Reader(sentence, Account_Type, Switch_Menu);
 			break;
 		case 1: //Deposit Option
 			cout << "Deposit" << endl;
@@ -146,7 +189,14 @@ int main(void) {
 			Transfer_Destination = Account_Type;
 			cout << "How much would you like to deposit?" << endl;
 			Money_Transactions(sentence, Account_Type, Switch_Menu, Transfer_Destination); //Function that fills sentence to be sent
+			msg_len = strlen(sentence) + 1;
+			cout << "size of message" << sizeof(sentence) << endl;
+			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
+			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
+			cout << "size of recieved message" << sizeof(sentence) << endl;
+			cout << "Length of recieved message" << msg_len << endl;
+			Message_Reader(modifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 2:
 			cout << "Withdrawl" << endl;
@@ -155,7 +205,14 @@ int main(void) {
 			Transfer_Destination = Account_Type;
 			cout << "How much would you like to Withdraw?" << endl;
 			Money_Transactions(sentence, Account_Type, Switch_Menu, Transfer_Destination);
+			msg_len = strlen(sentence) + 1;
+			cout << "size of message" << sizeof(sentence) << endl;
+			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
+			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
+			cout << "size of recieved message" << sizeof(sentence) << endl;
+			cout << "Length of recieved message" << msg_len << endl;
+			Message_Reader(modifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 3:
 			cout << "Transfer" << endl;
@@ -165,7 +222,14 @@ int main(void) {
 			cin >> Transfer_Destination;
 			cout << "How much would you like to Transfer? Whole Dollars only" << endl;
 			Money_Transactions(sentence, Account_Type, Switch_Menu, Transfer_Destination);
+			msg_len = strlen(sentence) + 1;
+			cout << "size of message" << sizeof(sentence) << endl;
+			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
+			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
+			cout << "size of recieved message" << sizeof(sentence) << endl;
+			cout << "Length of recieved message" << msg_len << endl;
+			Message_Reader(ModifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 4:
 			cout << "Closing Program" << endl;
@@ -184,7 +248,7 @@ int main(void) {
 
 	/* get response from server */
 
-	bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
+	
 
 	printf("\nThe response from server is:\n");
 	printf("%s\n\n", modifiedSentence);
