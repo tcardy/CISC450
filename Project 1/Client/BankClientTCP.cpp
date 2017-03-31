@@ -28,7 +28,9 @@ void Balance_Request(char sentence[], int Account, int Transaction_Type){
 	sentence[1] = Int_to_Char_conversion(Transaction_Type);
 	sentence[2] = Int_to_Char_conversion(Account);
 	sentence[3] = Int_to_Char_conversion(Account);
-
+	for (int g = 4; g < 24; g++{
+	sentence[g] = '0';	
+	}
 	//Just need to send Sentence at this point
 }
 //This function Rounds any number by extracting the Quotient by division and returning an acceptable amount
@@ -178,9 +180,10 @@ int main(void) {
 			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
 			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
-			cout << "size of recieved message" << sizeof(sentence) << endl;
+			msg_len = strlen(modifiedSentence) + 1;
+			cout << "size of recieved message" << sizeof(modifiedSentence) << endl;
 			cout << "Length of recieved message" << msg_len << endl;
-			Message_Reader(sentence, Account_Type, Switch_Menu);
+			Message_Reader(ModifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 1: //Deposit Option
 			cout << "Deposit" << endl;
@@ -194,9 +197,10 @@ int main(void) {
 			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
 			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
-			cout << "size of recieved message" << sizeof(sentence) << endl;
+			msg_len = strlen(modifiedSentence) + 1;
+			cout << "size of recieved message" << sizeof(modifiedSentence) << endl;
 			cout << "Length of recieved message" << msg_len << endl;
-			Message_Reader(modifiedSentence, Account_Type, Switch_Menu);
+			Message_Reader(ModifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 2:
 			cout << "Withdrawl" << endl;
@@ -210,9 +214,10 @@ int main(void) {
 			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
 			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
-			cout << "size of recieved message" << sizeof(sentence) << endl;
+			msg_len = strlen(modifiedSentence) + 1;
+			cout << "size of recieved message" << sizeof(modifiedSentence) << endl;
 			cout << "Length of recieved message" << msg_len << endl;
-			Message_Reader(modifiedSentence, Account_Type, Switch_Menu);
+			Message_Reader(ModifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 3:
 			cout << "Transfer" << endl;
@@ -227,9 +232,10 @@ int main(void) {
 			cout << "Length of message" << msg_len << endl;
 			bytes_sent = send(sock_client, sentence, msg_len, 0);
 			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
-			cout << "size of recieved message" << sizeof(sentence) << endl;
+			msg_len = strlen(modifiedSentence) + 1;
+			cout << "size of recieved message" << sizeof(modifiedSentence) << endl;
 			cout << "Length of recieved message" << msg_len << endl;
-			Message_Reader(modifiedSentence, Account_Type, Switch_Menu);
+			Message_Reader(ModifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 4:
 			cout << "Closing Program" << endl;
