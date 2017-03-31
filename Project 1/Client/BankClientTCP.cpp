@@ -229,7 +229,7 @@ int main(void) {
 			bytes_recd = recv(sock_client, modifiedSentence, STRING_SIZE, 0);
 			cout << "size of recieved message" << sizeof(sentence) << endl;
 			cout << "Length of recieved message" << msg_len << endl;
-			Message_Reader(ModifiedSentence, Account_Type, Switch_Menu);
+			Message_Reader(modifiedSentence, Account_Type, Switch_Menu);
 			break;
 		case 4:
 			cout << "Closing Program" << endl;
