@@ -16,7 +16,7 @@
    incoming requests from clients. You should change this to a different
    number to prevent conflicts with others in the class. */
 
-#define SERV_TCP_PORT 65000
+#define SERV_TCP_PORT 5050
 
 int main(void) {
 
