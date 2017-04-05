@@ -23,12 +23,18 @@
 
 using namespace std;
 
+/* Begin Account Class */
 class Account {
-   public:
+	
+	// Class Variables
+	public:
 		int account;   // Account number
 		char type;	// Acount type (Checking or savings)
 		int balance;   // The current balance of the account
-	  
+		
+	// End Class Variables
+	 
+	// Begin Class Function Declarations
 	int deposit(int amount){
 		balance += amount;
 		return balance;
@@ -54,6 +60,7 @@ class Account {
 	}
 		
 	int transfer(Account& to, int amount){
+		
 		if (balance >= amount){
 			to.balance += amount;
 			balance -= amount;
@@ -61,8 +68,12 @@ class Account {
 		}
 		return -4;
 	}
+	// End Class Functions
 };
 
+// End Account Class Declaration
+
+// Initializes an Account object
 void init_account(Account& a, int arg1, char arg2, int arg3){
 		a.account = arg1;
 		a.type = arg2;
@@ -73,8 +84,8 @@ void init_account(Account& a, int arg1, char arg2, int arg3){
 Account checking;
 Account savings;
 
-// Global communication variables
 
+// This function alters the indices related to the amount in our message
 void change_amount_sentence(char sentence[], int amount, int index){
 	bitset<20> b1 (amount);
 	string s = b1.to_string();
@@ -86,6 +97,7 @@ void change_amount_sentence(char sentence[], int amount, int index){
 	sentence[index + j] = '\0';
 }
 
+// This function processes a check balance operation and changes the message to reflect the balance
 void process_check_balance(char sentence[]){
 	int value;
 	
@@ -99,6 +111,7 @@ void process_check_balance(char sentence[]){
 	
 }
 
+// This function processes a withdraw operation and appends the balance to the message
 void process_withdraw(char sentence[]){
 	
 	string s(sentence + 4, sentence + 24);
@@ -135,6 +148,7 @@ void process_withdraw(char sentence[]){
 	}
 }
 
+// This function processes a deposit operation and appends the new balance to the message
 void process_deposit(char sentence[]){
 	string s(sentence + 4, sentence + 24);
 	bitset<20> b1 (s);
@@ -152,6 +166,7 @@ void process_deposit(char sentence[]){
 	}
 }
 
+// This function processes a account transfer and appends the new balance of both accounts
 void process_transfer(char sentence[]){
 	string s(sentence + 4, sentence + 24);
 	bitset<20> b1 (s);
@@ -179,6 +194,7 @@ void process_transfer(char sentence[]){
 	}
 }
 
+// This function determines which operation needs to be processed
 void process_transaction(char sentence[]){
 	
 	cout << "Processing transaction\n" << endl;
@@ -196,6 +212,7 @@ void process_transaction(char sentence[]){
 
 int main(void){
 	
+	// Initializing the checking and savings accounts
 	init_account(checking, 1, 'c', 0);
 	init_account(savings, 2, 's',0);
 	
@@ -213,75 +230,90 @@ int main(void){
 	
 	/* open a socket */
 
-   if ((sock_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-      perror("Server: can't open stream socket");
-      exit(1);                                                
-   }
-
-   /* initialize server address information */
+	if ((sock_server = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+		perror("Server: can't open stream socket");
+		exit(1);                                                
+	}
+   
+   
+	/* initialize server address information */
     
-   memset(&server_addr, 0, sizeof(server_addr));
-   server_addr.sin_family = AF_INET;
-   server_addr.sin_addr.s_addr = htonl (INADDR_ANY);  /* This allows choice of
+	memset(&server_addr, 0, sizeof(server_addr));
+	server_addr.sin_family = AF_INET;
+	server_addr.sin_addr.s_addr = htonl (INADDR_ANY);  /* This allows choice of
                                         any host interface, if more than one
                                         are present */ 
-   server_port = SERV_TCP_PORT; /* Server will listen on this port */
-   server_addr.sin_port = htons(server_port);
+	server_port = SERV_TCP_PORT; /* Server will listen on this port */
+	server_addr.sin_port = htons(server_port);
 
-   /* bind the socket to the local server port */
+	/* bind the socket to the local server port */
 
-   if (bind(sock_server, (struct sockaddr *) &server_addr,
+	if (bind(sock_server, (struct sockaddr *) &server_addr,
                                     sizeof (server_addr)) < 0) {
-      perror("Server: can't bind to local address");
-      close(sock_server);
-      exit(1);
-   }                     
+		perror("Server: can't bind to local address");
+		close(sock_server);
+		exit(1);
+	}                     
 
-   /* listen for incoming requests from clients */
+	/* listen for incoming requests from clients */
 
-   if (listen(sock_server, 50) < 0) {    /* 50 is the max number of pending */
-      perror("Server: error on listen"); /* requests that will be queued */
-      close(sock_server);
-      exit(1);
-   }
-   printf("I am here to listen ... on port %hu\n\n", server_port);
+	if (listen(sock_server, 50) < 0) {    /* 50 is the max number of pending */
+		perror("Server: error on listen"); /* requests that will be queued */
+		close(sock_server);
+		exit(1);
+	}
+	printf("I am here to listen ... on port %hu\n\n", server_port);
   
-   client_addr_len = sizeof (client_addr);
-
-   /* wait for incoming connection requests in an indefinite loop */
+	client_addr_len = sizeof (client_addr);
+   	
+	while(1){
+		
+		/* wait for incoming connection requests in an indefinite loop */
    
-   sock_connection = accept(sock_server, (struct sockaddr *) &client_addr, 
+		sock_connection = accept(sock_server, (struct sockaddr *) &client_addr, 
                                          &client_addr_len);
                      /* The accept function blocks the server until a
                         connection request comes from a client */
-    if (sock_connection < 0) {
-       perror("Server: accept() error\n"); 
-       close(sock_server);
-       exit(1);
-    }
-	
-	while(1){
- 
-      /* receive the message */
-
-      bytes_recd = recv(sock_connection, sentence, STRING_SIZE, 0);
-
-      if (bytes_recd > 0){
-         printf("Received Sentence is:\n");
-         printf("%s", sentence);
-         printf("\nwith length %d\n\n", bytes_recd);
-
-        /* prepare the message to send */
-
-		 process_transaction(sentence);
-		 msg_len = strlen(sentence);
-
-         /* send message */
- 
-         bytes_sent = send(sock_connection, sentence, msg_len, 0);
+						
+		if (sock_connection < 0) {
+			perror("Server: accept() error\n"); 
+			close(sock_server);
+			exit(1);
 		}
+		
+		/* Inner loop for serving the currently connected client*/
+		while(1){
+ 
+			/* receive the message */
+
+			bytes_recd = recv(sock_connection, sentence, STRING_SIZE, 0);
+
+			if (bytes_recd > 0){
+				printf("Received Sentence is:\n");
+				printf("%s", sentence);
+				printf("\nwith length %d\n\n", bytes_recd);
+
+				/* prepare the message to send */
+
+				process_transaction(sentence);
+				msg_len = strlen(sentence);
+
+				/* send message */
+	 
+				bytes_sent = send(sock_connection, sentence, msg_len, 0);
+				printf("Sent Sentence is:\n");
+				printf("%s", sentence);
+				printf("\nwith length %d\n\n", bytes_sent);
+			}
+			
+			// Breaks out of the inner loop to wait for a new connection in the outer loop
+			else
+				break;
+		}
+		cout << "Closing Connection" << endl;
+		close(sock_connection);
 	}
-	close(sock_connection);
+	
 	return 0;
 	
 }
