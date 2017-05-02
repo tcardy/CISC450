@@ -1,3 +1,3 @@
 run:
-	g++ -o recv udpserver.cpp
+	g++ -o recv recv.cpp
 	./recv

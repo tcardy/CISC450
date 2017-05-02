@@ -109,7 +109,7 @@ int main(void) {
 	  else
 		  temp2 = (uint16_t)1;
 	  
-	  uint16_t seq = htons(temp2);
+		uint16_t seq = htons(temp2);
 		memcpy(ack, &seq, 2);
 
 

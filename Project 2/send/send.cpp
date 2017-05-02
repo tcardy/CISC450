@@ -171,10 +171,12 @@ int read_ack(char ack_packet[]){
 	uint16_t ack;
     memcpy(&ack, ack_packet, 2);
     uint16_t returnedSeq = ntohs(ack);
+	cout << "The ACK returned is " << returnedSeq << endl;
     if (returnedSeq == seqNum){
 		readNext = 1;
-		seqNum = (uint16_t)(1 - seqNum);
 		numACKs++;
+		cout << "ACK " << seqNum << " received" << endl;
+		seqNum = (uint16_t)(1 - seqNum);
 	}
 }
 
@@ -328,7 +330,6 @@ int main(void){
 	do{		
 		wait_for_call_from_above(buffer);
 		make_packet(buffer);
-		
 		send_packet(packet);
 		set_timer();
 		wait_for_ack();
