@@ -92,19 +92,19 @@ void bind_socket(){
 		exit(1);
 	}
 }
-
+//Opens a file
 void open_file(){
 	outFile.open("out.txt", ios::out);
 }
-
+//Closes a file
 void close_file(){
 	outFile.close();
 }
-
+//This Function will append the character array to the text file
 void write_to_file(char buffer[]){ 
 	outFile << buffer;
 }
-
+//Simulates a packet loss
 int simulate_packet_loss(double rate){
 
 	/*This function will generate a random number between 0-1 and return a 0 or
@@ -117,12 +117,15 @@ int simulate_packet_loss(double rate){
 	else
 		return 1;
 }
-
+/*
+This function calculates the difference in time 
+from when the program started file transferring and when it ended
+*/
 void calculate_duration(){
 	duration = ((end.tv_sec * 1000 + end.tv_usec / 1000)
 		  - (start.tv_sec * 1000 + start.tv_usec / 1000));
 }
-
+//Prints out all the variables requested at the end of file transfer
 void print_report(){
 	cout << "Number of data packets received successfully: " << numPackets << endl;
 	cout << "Total number of data bytes delivered to user: " << totalBytes << endl;
@@ -176,11 +179,13 @@ int main(void) {
 
 	
 	while (1) {
-
+		//One time if statement that gets 
+		//the exact date when file transfer started
 		if (firstRecv == 0){
 			gettimeofday(&start, NULL);
 			firstRecv++;
 		}
+		//Receive the Packet
 		bytes_recd = recvfrom(sock_server, &packet, 84, 0,
             (struct sockaddr *) &client_addr, &client_addr_len);
 	
@@ -189,7 +194,7 @@ int main(void) {
 		memcpy(&container, packet, 2);
 		uint16_t converter = ntohs(container);
 		short count = (short)converter;
-		
+		//Get the Sequence
 		memcpy(&container, packet + 2, 2);
 		converter = ntohs(container);
 		short seq = (short)converter;
@@ -207,14 +212,13 @@ int main(void) {
 			int loss_packet = simulate_packet_loss(packet_loss_rate);
 			//If packet is not loss, continue
 			if (loss_packet == 1){
-				//Write File
-		
-				numPackets++;
-				totalBytes += count;
+				//Next two lines add to variable count
+				numPackets++; //Number of Packets
+				totalBytes += count; //Total Bytes
 				cout << "Packet " << seq << " received with " << count << " data bytes" <<endl;
 				memcpy(buffer, packet + 4, count);
 				
-				write_to_file(buffer);
+				write_to_file(buffer); //Writes to a file
 		
 				
 				//Changes the expected sequence number
@@ -222,38 +226,38 @@ int main(void) {
 				
 				int loss_ack = simulate_packet_loss(ack_loss_rate);
 				//If Ack is not to be lost, send message
-		
+				
 				if (loss_ack == 1){
 					/* prepare the message to send */
-
+					//Places header on Ack
 					msg_len = 2;
 					uint16_t ackSeq = htons((uint16_t)seq);
 					memcpy(ack, &ackSeq, 2);
 					
 					/* send ACK */
 					cout << "ACK " << seq << " transmitted" << endl;
-					numACK++;
+					numACK++; //Number of acks
 					bytes_sent = sendto(sock_server, ack, msg_len, 0,
 						(struct sockaddr*) &client_addr, client_addr_len);
 					
 			
 				}
-				else{
+				else{ //Lost Acks Case
 					cout << "ACK " << seq << " lost" << endl;
-					acksLost++;
+					acksLost++; //Number of Acks Lost
 				}
 			}
-			else{
+			else{ // Lost Packets Case
 				cout << "Packet " << seq << " lost" << endl;
-				packetsLost++;
+				packetsLost++; //Number of packets Lost
 			}
 		}
-		// Duplicate received
+		//Duplicate Packets Case
 		else{
-			numDuplicate++;
+			numDuplicate++; // Duplicate received
 			cout << "Duplicate packet " << seq << " received with " << count << " data bytes" << endl;
 			cout << "ACK " << seq << " transmitted" << endl;
-			numACK++;
+			numACK++; //Number of Acks
 			msg_len = 2;
 			uint16_t ackSeq = htons((uint16_t)seq);
 			memcpy(ack, &ackSeq, 2);
@@ -263,9 +267,9 @@ int main(void) {
 				(struct sockaddr*) &client_addr, client_addr_len);
 		}
 	}
-	close_file();
-	gettimeofday(&end, NULL);
-	calculate_duration();
-	print_report();
+	close_file(); //Closes the file
+	gettimeofday(&end, NULL); //Gets Current Time
+	calculate_duration();  // Take the difference between that time
+	print_report(); //Print the variables
 	close (sock_server);
 }
