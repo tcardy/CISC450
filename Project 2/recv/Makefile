@@ -3,4 +3,4 @@ run:
 	./recv
 
 clean:
-	rm -f recv *.txt
+	rm -f recv out.txt
