@@ -16,17 +16,17 @@
    incoming messages from clients. You should change this to a different
    number to prevent conflicts with others in the class. */
 
-#define SERV_UDP_PORT 65100
+#define SERV_UDP_PORT 5045
 
 int main(void) {
 
-   int sock_server;  /* Socket on which server listens to clients */
+	int sock_server;  /* Socket on which server listens to clients */
 
-   struct sockaddr_in server_addr;  /* Internet address structure that
+	struct sockaddr_in server_addr;  /* Internet address structure that
                                         stores server address */
-   unsigned short server_port;  /* Port number used by server (local port) */
+	unsigned short server_port;  /* Port number used by server (local port) */
 
-   struct sockaddr_in client_addr;  /* Internet address structure that
+	struct sockaddr_in client_addr;  /* Internet address structure that
                                         stores client address */
    unsigned int client_addr_len;  /* Length of client address structure */
 
@@ -69,10 +69,22 @@ int main(void) {
 
    client_addr_len = sizeof (client_addr);
 
+   char packet[1024];
    for (;;) {
+	   
 
-      bytes_recd = recvfrom(sock_server, &sentence, STRING_SIZE, 0,
+      bytes_recd = recvfrom(sock_server, &packet, STRING_SIZE, 0,
                      (struct sockaddr *) &client_addr, &client_addr_len);
+		//Get the Count
+		uint16_t container;
+		memcpy(&container, packet, 2);
+		uint16_t converter = ntohs(container);
+		short count = (short)converter;
+		
+		memcpy(&container, packet + 2, 2);
+		converter = ntohs(container);
+		short seq = (short)converter;
+		memcpy(sentence, packet + 4, count);
       printf("Received Sentence is: %s\n     with length %d\n\n",
                          sentence, bytes_recd);
 

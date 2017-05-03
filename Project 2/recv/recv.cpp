@@ -16,8 +16,9 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <fstream>
+#include <sys/time.h>
 #define STRING_SIZE 1024
-#include <ctime>
+
 /* SERV_UDP_PORT is the port number on which the server listens for
    incoming messages from clients. You should change this to a different
    number to prevent conflicts with others in the class. */
@@ -31,6 +32,14 @@ short expected_seq;
 short count;
 int numPackets;
 int totalBytes;
+int numDuplicate;
+int packetsLost;
+int acksLost;
+int totalPackets;
+int numACK;
+struct timeval start, end;
+long duration;
+int firstRecv;
 int sock_server;  /* Socket on which server listens to clients */
 
 struct sockaddr_in server_addr;  /* Internet address structure that
@@ -48,6 +57,12 @@ unsigned int i;  /* temporary loop variable */
 void init_variables(){
 	numPackets = 0;
 	totalBytes = 0;
+	numDuplicate = 0;
+	packetsLost = 0;
+	acksLost = 0;
+	totalPackets = 0;
+	numACK = 0;
+	firstRecv = 0;
 }
 /* open a socket */
 void open_socket(){
@@ -103,6 +118,23 @@ int simulate_packet_loss(double rate){
 		return 1;
 }
 
+void calculate_duration(){
+	duration = ((end.tv_sec * 1000 + end.tv_usec / 1000)
+		  - (start.tv_sec * 1000 + start.tv_usec / 1000));
+}
+
+void print_report(){
+	cout << "Number of data packets received successfully: " << numPackets << endl;
+	cout << "Total number of data bytes delivered to user: " << totalBytes << endl;
+	cout << "Total number of duplicate data packets received: " << numDuplicate << endl;
+	cout << "Number of data packets dropped due to loss: " << packetsLost << endl;
+	cout << "Total number of data packets received: " << (numPackets + numDuplicate + packetsLost);
+	cout << "\nNumber of ACKs transmitted without loss: " << numACK << endl;
+	cout << "Number of ACKs generated but dropped due to loss: " << acksLost << endl;
+	cout << "Total number of ACKs generated: " << (numACK + acksLost) << endl;
+	cout << "Total elapsed time from start to end in milliseconds: " << duration << endl;
+}
+
 int main(void) {
 	double packet_loss_rate; //Parameter to Drop Packet
 	double ack_loss_rate;	//Parameter to Drop Ack
@@ -130,7 +162,8 @@ int main(void) {
 	init_server();
 	bind_socket();
 	open_file();
-	char buffer[82];
+	init_variables();
+	char buffer[92];
 	char packet[92];
 	char ack[6];
 	
@@ -141,22 +174,27 @@ int main(void) {
 
 	client_addr_len = sizeof (client_addr);
 
-
+	
 	while (1) {
 
-		bytes_recd = recvfrom(sock_server, &packet, 92, 0,
+		if (firstRecv == 0){
+			gettimeofday(&start, NULL);
+			firstRecv++;
+		}
+		bytes_recd = recvfrom(sock_server, &packet, 84, 0,
             (struct sockaddr *) &client_addr, &client_addr_len);
+	
 		//Get the Count
 		uint16_t container;
-		memcpy(&container, &packet, 2);
+		memcpy(&container, packet, 2);
 		uint16_t converter = ntohs(container);
 		short count = (short)converter;
-		
 		
 		memcpy(&container, packet + 2, 2);
 		converter = ntohs(container);
 		short seq = (short)converter;
-		
+		memcpy(buffer, packet + 4, count);
+	
 		//If count is 0, end program	
 		if (count == 0){
 			cout << "End of Transmission Packet with sequence number " << seq ;
@@ -171,10 +209,14 @@ int main(void) {
 			if (loss_packet == 1){
 				//Write File
 		
+				numPackets++;
+				totalBytes += count;
 				cout << "Packet " << seq << " received with " << count << " data bytes" <<endl;
 				memcpy(buffer, packet + 4, count);
+				
 				write_to_file(buffer);
 		
+				
 				//Changes the expected sequence number
 				expected_seq = 1 - expected_seq;
 				
@@ -190,6 +232,7 @@ int main(void) {
 					
 					/* send ACK */
 					cout << "ACK " << seq << " transmitted" << endl;
+					numACK++;
 					bytes_sent = sendto(sock_server, ack, msg_len, 0,
 						(struct sockaddr*) &client_addr, client_addr_len);
 					
@@ -197,16 +240,20 @@ int main(void) {
 				}
 				else{
 					cout << "ACK " << seq << " lost" << endl;
+					acksLost++;
 				}
 			}
 			else{
 				cout << "Packet " << seq << " lost" << endl;
+				packetsLost++;
 			}
 		}
 		// Duplicate received
 		else{
+			numDuplicate++;
 			cout << "Duplicate packet " << seq << " received with " << count << " data bytes" << endl;
 			cout << "ACK " << seq << " transmitted" << endl;
+			numACK++;
 			msg_len = 2;
 			uint16_t ackSeq = htons((uint16_t)seq);
 			memcpy(ack, &ackSeq, 2);
@@ -217,4 +264,8 @@ int main(void) {
 		}
 	}
 	close_file();
+	gettimeofday(&end, NULL);
+	calculate_duration();
+	print_report();
+	close (sock_server);
 }

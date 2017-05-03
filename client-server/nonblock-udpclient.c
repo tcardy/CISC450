@@ -109,13 +109,20 @@ int main(void) {
 
    /* user interface */
 
-   printf("Please input a sentence:\n");
-   scanf("%s", sentence);
-   msg_len = strlen(sentence) + 1;
+	packet[92];
+	printf("Please input a sentence:\n");
+	scanf("%s", sentence);
+	msg_len = strlen(sentence) + 1;
+	uint16_t ndataBytesSent = htons((uint16_t) msg_len);
+	memcpy(&packet, &ndataBytesSent, 2);
+	short seqNum = 0;
+	uint16_t seq = htons((uint16_t)seqNum);
+	memcpy(packet + 2, &seq, 2);
+	memcpy(packet + 4, sentence, msg_len);
 
    /* send message */
   
-   bytes_sent = sendto(sock_client, sentence, msg_len, 0,
+   bytes_sent = sendto(sock_client, sentence, msg_len + 4, 0,
             (struct sockaddr *) &server_addr, sizeof (server_addr));
 
    /* get response from server */
@@ -124,7 +131,7 @@ int main(void) {
    
    do {  /* loop required because socket is nonblocking */
       bytes_recd = recvfrom(sock_client, modifiedSentence, STRING_SIZE, 0,
-                (struct sockaddr *) 0, (int *) 0);
+                (struct sockaddr *) 0, (socklen_t *) 0);
       /* Note: you can do something else in this loop while
          waiting for a response from the server
       */

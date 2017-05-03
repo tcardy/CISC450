@@ -1,8 +1,7 @@
-/* nonblock-udp_client.c */ 
-/* Programmed by Adarsh Sethi */
-/* February 19, 2017 */
-
-/* Version of udp_client.c that is nonblocking */
+/* send.cpp */ 
+/* Programmed by Adarsh Sethi
+	modified by Tom Cardy*/
+/* Spring 2017 */
 
 #include <stdio.h>          /* for standard I/O functions */
 #include <stdlib.h>         /* for exit */
@@ -18,6 +17,8 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/select.h>
+#include <sys/ioctl.h>
 
 
 #define STRING_SIZE 1024
@@ -36,7 +37,7 @@ uint16_t seqNum;
 int readNext;
 int timeExpired;
 char packet[92];
-char ack_packet[2];
+char ack_packet[1024];
 char eot_packet[4];
 struct itimerval timer;
 long timeout_value;
@@ -46,6 +47,7 @@ int exponent;
 long duration;
 short dataBytesSent;
 struct timeval start, end;
+int timeouts;
 int bytes_sent, bytes_recd; /* number of bytes sent or received */
 int sock_client;  /* Socket used by client */ 
 struct sockaddr_in client_addr;  /* Internet address structure that
@@ -119,14 +121,36 @@ void initialize_server(){
 	memcpy((char *)&server_addr.sin_addr, server_hp->h_addr,
                                     server_hp->h_length);
 	server_addr.sin_port = htons(server_port);
+	
 }
 
 void sigalrm_handler(int sig)
 {
     timeExpired = 1;
 	timeoutCount++;
+	timeouts++;
 	cout << "Timeout expired for packet numbered " << seqNum <<endl;
+	signal(SIGALRM, sigalrm_handler); 
 }
+
+void set_timer(){
+	timer.it_interval.tv_sec = 0;
+	timer.it_interval.tv_usec = 0;
+	timer.it_value.tv_sec = timeout_secs; 
+	timer.it_value.tv_usec = timeout_usecs;
+	setitimer(ITIMER_REAL, &timer,0);
+	timeExpired = 0;
+}
+
+void stop_timer(){
+	timer.it_interval.tv_sec = 0;
+	timer.it_interval.tv_usec = 0;
+	timer.it_value.tv_sec = 0; 
+	timer.it_value.tv_usec = 0;
+	setitimer(ITIMER_REAL, &timer,0);
+	timeExpired = 0;
+}
+
 
 void initialize_variables(){
 	
@@ -139,6 +163,7 @@ void initialize_variables(){
 	totalTimeTakenToTransmit = 0;
 	seqNum = (uint16_t)0;
 	sock_len = 0;
+	timeouts = 0;
 }
 
 int open_file(char filename[]){
@@ -171,19 +196,22 @@ int read_ack(char ack_packet[]){
 	uint16_t ack;
     memcpy(&ack, ack_packet, 2);
     uint16_t returnedSeq = ntohs(ack);
-	cout << "The ACK returned is " << returnedSeq << endl;
-    if (returnedSeq == seqNum){
+	if (returnedSeq == seqNum){
 		readNext = 1;
 		numACKs++;
 		cout << "ACK " << seqNum << " received" << endl;
 		seqNum = (uint16_t)(1 - seqNum);
 	}
+	else{
+		bytes_recd = 0;
+		set_timer();
+	}
 }
-
 void recv_ack(){
 	
-	bytes_recd = recvfrom(sock_client, ack_packet, 4, 0,
-        (struct sockaddr *) 0, &sock_len);
+	bytes_recd = recvfrom(sock_client, ack_packet, 1024, 0,
+			(struct sockaddr *) 0, &sock_len);
+			
 	if (bytes_recd > 0){
 		read_ack(ack_packet);
 	}
@@ -208,12 +236,12 @@ int resend_packet(char packet[]){
 
 int make_packet(char buffer[]){
 	
-	dataBytesSent = strlen(buffer);
+	dataBytesSent = strlen(buffer) + 1;
 	uint16_t ndataBytesSent = htons(dataBytesSent);
 	memcpy(&packet, &ndataBytesSent, 2);
 	uint16_t seq = htons(seqNum);
 	memcpy(packet + 2, &seq, 2);
-	memcpy(packet + 4, &buffer, dataBytesSent);
+	memcpy(packet + 4, buffer, dataBytesSent);
 }
 
 void send_eot(){
@@ -226,26 +254,6 @@ void send_eot(){
         (struct sockaddr *) &server_addr, sizeof (server_addr));
 	cout << "End of Transmission Packet with sequence number ";
 	cout << seqNum << " transmitted with 0 data bytes" << endl;
-}
-
-void set_timer(){
-	timer.it_interval.tv_sec = 0;
-	timer.it_interval.tv_usec = 0;
-	timer.it_value.tv_sec = timeout_secs; 
-	timer.it_value.tv_usec = timeout_usecs;
-	setitimer(ITIMER_REAL, &timer,0);
-	timeExpired = 0;
-
-	signal(SIGALRM, sigalrm_handler); 
-}
-
-void stop_timer(){
-	timer.it_interval.tv_sec = 0;
-	timer.it_interval.tv_usec = 0;
-	timer.it_value.tv_sec = 0; 
-	timer.it_value.tv_usec = 0;
-	setitimer(ITIMER_REAL, &timer,0);
-	timeExpired = 0;
 }
 
 void determine_timeout_values(){
@@ -268,13 +276,28 @@ void wait_for_ack(){
 	}
 }
 
+void clear_recv_buffer(){
+	int bytesAv = 0;
+	
+	while ( bytesAv >= 1 )
+	{
+		bytes_recd = recvfrom(sock_client, ack_packet, bytesAv, 0,
+			(struct sockaddr *) 0, &sock_len);
+			
+		ioctl (sock_client,FIONREAD,&bytesAv);
+	}
+	ioctl (sock_client,FIONREAD,&bytesAv);
+	
+	bytes_recd = 0;
+}
+
 void next_iteration(){
+	
 	timeExpired = 0;
 	readNext = 0;
 	bytes_sent = 0;
 	bytes_recd = 0;
 	packetNum++;
-	
 }
 
 void print_report(){
@@ -302,9 +325,8 @@ int main(void){
 	initialize_server();
 	char buffer[80];
 	char filename[1024];
-	strcpy(filename, "alice.txt");
 	initialize_variables();
-	
+	signal(SIGALRM, sigalrm_handler); 
 
 	cout << "Please enter a timeout exponent (Between 1 and 10):\n" << endl;
 	cin >> exponent;
@@ -316,20 +338,24 @@ int main(void){
 		cin >> exponent;
 	}
 	determine_timeout_values();
-	/*
+	
 	do{
 		cout << "\nPlease enter a file name (must include either absolute or relative path)" << endl;
 		cin >> filename;
 	
 		fileIsOpen = open_file(filename);
 	} while (fileIsOpen < 0);
-	*/
+	
 	
 	fileIsOpen = open_file(filename);
 	gettimeofday(&start, NULL);
 	do{		
 		wait_for_call_from_above(buffer);
 		make_packet(buffer);
+		if (timeouts > 0){
+			clear_recv_buffer();
+			timeouts = 0;
+		}
 		send_packet(packet);
 		set_timer();
 		wait_for_ack();
@@ -349,6 +375,7 @@ int main(void){
 	calculate_duration();
 	print_report();
 	close_file();
+	close (sock_client);
 	
 	return 0;
 }
